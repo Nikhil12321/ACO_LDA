@@ -8,7 +8,7 @@ from sklearn.metrics import mean_squared_error
 class feature(object):
 
 	def __init__(self):
-		#self.val = []
+		self.delta = 0
 		self.pheromone = 0
 
 
@@ -26,7 +26,6 @@ def getData():
 
 	with open('CSV_Version.csv', 'r') as c:
 		reader = csv.reader(c)
-
 
 		for row in reader:
 	
@@ -50,6 +49,7 @@ def getData():
 def initFeatures():
 	for i in range(0, num_features):
 		temp = feature()
+		temp.delta = 0
 		temp.pheromone = cc
 		features.append(temp)
 
@@ -63,6 +63,7 @@ def initAnt(ants):
 		r = randint(0, len(temp_selected_features)-1)
 		a.ant_f.append(temp_selected_features[r])
 		temp_selected_features.remove(temp_selected_features[r])
+
 
 	#Apply USM and other measures here for the next p num_features
 	ants.append(a)
@@ -112,11 +113,27 @@ def classifyAnts(ants):
 
 		predict = clf.predict(X_np)
 		a.mse = mean_squared_error(Y_np, predict)
-		print a.mse
+
+def updatePheromoneTrail(ants):
+
+	max_mse = ants[k-1].mse
+	common_denominator = max_mse - ants[0].mse
+
+	# Calculate
+	for i in range(0, k):
+		for j in range(0, len(features)):
+			if j in ants[i].ant_f:
+				features[j].delta = features[j].delta + (max_mse - ants[i].mse)/common_denominator
+
+	# Update
+	for f in features:
+		f.pheromone = rho*f.pheromone + f.delta
+		f.delta = 0
 
 
-			
 
+def getKey(a):
+	return a.mse
 
 def perform_iteration():
 	
@@ -125,9 +142,11 @@ def perform_iteration():
 		initAnt(ants)
 	
 	classifyAnts(ants)
-	#select_k_features()
+	ants = sorted(ants,key=getKey)
 
-
+	for a in ants:
+		print a.mse
+	updatePheromoneTrail(ants)
 
 ##### DECLARATIONS #####
 
@@ -136,7 +155,7 @@ max_iter = 1
 k = 4
 pp = 2
 p = 0
-num_ants = 10
+num_ants = 30
 num_features = 0
 features = []
 selected_features = []
@@ -150,7 +169,8 @@ f_ans = 'true'
 num_tuples = 0
 m = 12
 split_ratio = 0.8
-#######################
+rho = 0.75
+######////////////######
 
 getData()
 
@@ -161,9 +181,8 @@ train_data = data[:num_train]
 test_data = data[num_train:]
 result_data_train = result_data[:num_train]
 result_data_test = result_data[num_train:]
-print num_train
-print num_test
-#############################################
+
+######/////////////////////////###########
 
 initFeatures()
 
@@ -171,12 +190,9 @@ if num_features <= m:
 	print "Number of features less than m"
 	exit()
 
-
-
 for i in range(0, num_features):
 	selected_features.append(i)
 
 for i in range(0, max_iter):
-
 	perform_iteration()
 
