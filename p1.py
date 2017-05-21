@@ -56,7 +56,7 @@ def initFeatures():
 def initAnt(ants):
 
 	a = ant()
-	temp_selected_features = selected_features
+	temp_selected_features = list(selected_features)
 
 	for i in range(0, m):
 
@@ -111,8 +111,6 @@ def classifyAnts(ants):
 		Y_np = np.array(Y)
 
 		predict = clf.predict(X_np)
-		print predict
-		print Y_np
 		a.mse = mean_squared_error(Y_np, predict)
 		print a.mse
 
@@ -138,7 +136,7 @@ max_iter = 1
 k = 4
 pp = 2
 p = 0
-num_ants = 1
+num_ants = 10
 num_features = 0
 features = []
 selected_features = []
