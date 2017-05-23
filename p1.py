@@ -3,6 +3,7 @@ from random import randint
 import numpy as np
 from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
 from sklearn.metrics import mean_squared_error
+import get_mi
 
 
 class feature(object):
@@ -23,8 +24,8 @@ def getData():
 	temp_list = []
 	global num_tuples
 	global num_features
-
-	with open('CSV_Version.csv', 'r') as c:
+	global filename
+	with open(filename, 'r') as c:
 		reader = csv.reader(c)
 
 		for row in reader:
@@ -53,7 +54,44 @@ def initFeatures():
 		temp.pheromone = cc
 		features.append(temp)
 
-def initAnt(ants):
+
+def calculate_Di(a, f):
+
+	x = 9999.9
+	global num_features
+	global gamma
+	global beta
+
+	for i in range(0, num_features):
+		if i in a.ant_f:
+			term1 = (mi_ff[f][f] - mi_ff[f][i])/mi_ff[f][f]
+			x = min(x, term1)
+
+	term2 = beta/len(a.ant_f)
+	sum = 0.0
+	for i in a.ant_f:
+		sum += math.pow(cmi_ffc[f][i]/(mi_fc[f] - mi_fc[i]), gamma)
+	
+	term2 = term2*sum
+	return term1*term2
+
+def local_importance(a, f):
+
+	Di = calculate_Di(a, f)
+	Li = mi_fc[f]*(2/(1+math.exp(-1*alpha*Di)) - 1)
+	return Li
+
+
+def calculate_denominator(a, f):
+
+	den = 0.0
+	for f in features:
+		if f not in a.ant_f:
+			den = den + features[f].pheromone*local_importance(a, f)
+	
+	return den
+
+def initAnt(temp_ants):
 
 	a = ant()
 	temp_selected_features = list(selected_features)
@@ -63,10 +101,16 @@ def initAnt(ants):
 		r = randint(0, len(temp_selected_features)-1)
 		a.ant_f.append(temp_selected_features[r])
 		temp_selected_features.remove(temp_selected_features[r])
-
+	
+	for a in temp_ants:
+		for i in range(0, p):
+			den = calculate_denominator(a, f)
+			for f in range(0, len(features)):
+				if f not in a.ant_f:
+					calculate_usm(a, f, den)
 
 	#Apply USM and other measures here for the next p num_features
-	ants.append(a)
+	temp_ants.append(a)
 
 def classifyAnts(ants):
 
@@ -137,16 +181,17 @@ def getKey(a):
 
 def perform_iteration():
 	
-	ants = []
+	temp_ants = []
 	for i in range(0, num_ants):
-		initAnt(ants)
+		initAnt(temp_ants)
 	
+	del ants[:]
+	ants = list(temp_ants)
+
 	classifyAnts(ants)
 	ants = sorted(ants,key=getKey)
-
-	for a in ants:
-		print a.mse
 	updatePheromoneTrail(ants)
+	return ants[0]
 
 ##### DECLARATIONS #####
 
@@ -165,11 +210,18 @@ test_data = []
 result_data = []
 result_data_train = []
 result_data_test = []
+ants = []
 f_ans = 'true'
 num_tuples = 0
 m = 12
 split_ratio = 0.8
 rho = 0.75
+filename = 'CSV_Version.csv'
+mu = 1
+kappa = 1
+alpha = 0.3
+gamma = 3
+beta = 1.65
 ######////////////######
 
 getData()
@@ -185,6 +237,7 @@ result_data_test = result_data[num_train:]
 ######/////////////////////////###########
 
 initFeatures()
+mi_fc, mi_ff, cmi_ffc = get_mutual_information(filename)
 
 if num_features <= m:
 	print "Number of features less than m"
@@ -195,4 +248,3 @@ for i in range(0, num_features):
 
 for i in range(0, max_iter):
 	perform_iteration()
-
