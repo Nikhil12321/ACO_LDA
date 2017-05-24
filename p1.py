@@ -3,7 +3,8 @@ from random import randint
 import numpy as np
 from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
 from sklearn.metrics import mean_squared_error
-import get_mi
+from get_mi import get_mutual_information
+import pandas as pd
 
 
 class feature(object):
@@ -46,7 +47,9 @@ def getData():
 				t.append(float(v))
 			data.append(t)
 	num_tuples = len(data)
-		
+	print num_features, num_tuples
+
+
 def initFeatures():
 	for i in range(0, num_features):
 		temp = feature()
@@ -109,7 +112,7 @@ def initAnt(temp_ants):
 				if f not in a.ant_f:
 					calculate_usm(a, f, den)
 
-	#Apply USM and other measures here for the next p num_features
+	
 	temp_ants.append(a)
 
 def classifyAnts(ants):
@@ -157,6 +160,7 @@ def classifyAnts(ants):
 
 		predict = clf.predict(X_np)
 		a.mse = mean_squared_error(Y_np, predict)
+		print a.mse
 
 def updatePheromoneTrail(ants):
 
@@ -237,7 +241,7 @@ result_data_test = result_data[num_train:]
 ######/////////////////////////###########
 
 initFeatures()
-mi_fc, mi_ff, cmi_ffc = get_mutual_information(filename)
+mi_fc, mi_ff, cmi_ffc = get_mutual_information('jm1_final.csv')
 
 if num_features <= m:
 	print "Number of features less than m"
