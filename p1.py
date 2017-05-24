@@ -189,7 +189,9 @@ def perform_iteration():
 	for i in range(0, num_ants):
 		initAnt(temp_ants)
 	
-	del ants[:]
+	print "initialized ants"
+	
+	#del ants[:]
 	ants = list(temp_ants)
 
 	classifyAnts(ants)
@@ -237,11 +239,14 @@ train_data = data[:num_train]
 test_data = data[num_train:]
 result_data_train = result_data[:num_train]
 result_data_test = result_data[num_train:]
+print "done with split"
 
 ######/////////////////////////###########
 
 initFeatures()
+print "initialized features"
 mi_fc, mi_ff, cmi_ffc = get_mutual_information('jm1_final.csv')
+print "fetched mutual info"
 
 if num_features <= m:
 	print "Number of features less than m"
