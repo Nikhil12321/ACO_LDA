@@ -2,7 +2,7 @@ import csv
 from random import randint
 import numpy as np
 from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
-from sklearn.metrics import mean_squared_error, accuracy_score
+from sklearn.metrics import mean_squared_error, accuracy_score, confusion_matrix
 from get_mi import get_mutual_information
 import pandas as pd
 from sklearn.model_selection import train_test_split
@@ -24,7 +24,7 @@ class ant(object):
 	def __init__(self):
 		self.ant_accuracy = 0.0
 		self.ant_f = []
-		self.mse = 0
+		self.mse = 1.0
 
 def getData():
 
@@ -136,8 +136,9 @@ def initAnt(temp_ants):
 def classifyAnts(ants):
 
 	clf = LinearDiscriminantAnalysis()
-
-
+	global best_ant
+	global best_predicted
+	global best_ground_truth
 	# Training
 	for a in ants:
 
@@ -180,6 +181,13 @@ def classifyAnts(ants):
 		a.mse = mean_squared_error(Y_np, predict)
 		a.ant_accuracy = accuracy_score(Y_np, predict, normalize=False)*100.0/len(Y_np)
 
+		if a.mse < best_ant.mse:
+			best_ant.mse = a.mse
+			best_ant.ant_f = list(a.ant_f)
+			best_ant.ant_accuracy = a.ant_accuracy
+			best_predicted = list(predict)
+			best_ground_truth = list(Y)
+		
 def updatePheromoneTrail(ants):
 
 	max_mse = ants[k-1].mse
@@ -206,7 +214,7 @@ def updatePheromoneTrail(ants):
 	del selected_features[:]
 	for f in unique_k_set:
 		selected_features.append(f)
-	print "size of selected features is ", len(selected_features)
+	#print "size of selected features is ", len(selected_features)
 
 def getKey(a):
 	return a.mse
@@ -220,10 +228,7 @@ def perform_iteration():
 		initAnt(temp_ants)
 	
 	print "initialized ants"
-	
-	#del ants[:]
 	ants = list(temp_ants)
-
 	classifyAnts(ants)
 	acc_ant = sorted(ants, key = getAccuracyKey, reverse = True)
 	print acc_ant[0].ant_accuracy
@@ -249,17 +254,20 @@ result_data = []
 result_data_train = []
 result_data_test = []
 ants = []
+best_predicted = []
+best_ground_truth = []
 f_ans = 'true'
 num_tuples = 0
-m = 8
+m = 16
 split_ratio = 0.8
 rho = 0.75
-filename = 'CSV_Version.csv'
+filename = 'Datasets/kc1.csv'
 mu = 1
 kappa = 1
 alpha = 0.3
 gamma = 3
 beta = 1.65
+best_ant = ant()
 ######////////////######
 
 getData()
@@ -275,17 +283,21 @@ print "number train and test", num_train, num_test
 initFeatures()
 print "initialized features"
 #mi_fc, mi_ff, cmi_ffc = get_mutual_information('jm1_final.csv')
-with open('mi_fc.pkl', 'rb') as pick:
+with open('Datasets/mi_fc_kc1.pkl', 'rb') as pick:
 	mi_fc = pickle.load(pick)
 pick.close()
-with open('mi_ff.pkl', 'rb') as pick:
+with open('Datasets/mi_ff_kc1.pkl', 'rb') as pick:
 	mi_ff = pickle.load(pick)
 pick.close()
 # with open('cmi_ffc.pkl', 'rb') as pick:
 # 	cmi_ffc = pickle.load(pick)
 # pick.close()
-cmi_ffc = get_mutual_information('jm1_final.csv')
-print "fetched mutual info"
+cmi_ffc = get_mutual_information('Datasets/kc1_normalized_randomized.csv')
+# print "fetched mutual info"
+# print type(mi_fc),type(mi_ff) ,type(cmi_ffc) 
+# print mi_fc[4]
+# print mi_ff[4][5] 
+# print cmi_ffc[2][3]
 if num_features <= m:
 	print "Number of features less than m"
 	exit()
@@ -293,10 +305,13 @@ if num_features <= m:
 for i in range(0, num_features):
 	selected_features.append(i)
 
-print "features are"
-print selected_features
-
 for i in range(0, max_iter):
 	perform_iteration()
 	if i == 0:
 		p = pp
+
+print num_features
+print num_tuples
+print "accuracy, ", best_ant.ant_accuracy, "mse ", best_ant.mse, "feature set ", best_ant.ant_f
+confusion = confusion_matrix(best_ground_truth, best_predicted)
+print confusion

@@ -22,7 +22,7 @@ def get_mutual_information(filename):
     #     mi_result_feature = mir(X, feature, discrete_features = False)
     #     mi_ff.append(mi_result_feature)
     #     print "done with ", i
-    #cmi_ffc contains Conditional Mutual Information of fi,fs:C. Use cmi_ffc[feature_i][feature_s]
+    # cmi_ffc contains Conditional Mutual Information of fi,fs:C. Use cmi_ffc[feature_i][feature_s]
     cmi_ffc = []
     for i in xrange(0, len(headers_list)-1):
         cmi = []
