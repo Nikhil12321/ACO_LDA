@@ -2,14 +2,8 @@ import csv
 from random import randint
 import numpy as np
 from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
-from sklearn.metrics import mean_squared_error, accuracy_score, confusion_matrix
-from get_mi import get_mutual_information
-import pandas as pd
-from sklearn.model_selection import train_test_split
-import pickle
-from sets import Set
-import math
-import sys
+from sklearn.metrics import mean_squared_error
+import get_mi
 
 
 class feature(object):
@@ -22,16 +16,16 @@ class feature(object):
 class ant(object):
 
 	def __init__(self):
-		self.ant_accuracy = 0.0
+		self.usm = []
 		self.ant_f = []
-		self.mse = 1.0
+		self.mse = 0
 
 def getData():
 
 	temp_list = []
 	global num_tuples
 	global num_features
-	global filename
+
 	with open(filename, 'r') as c:
 		reader = csv.reader(c)
 
@@ -53,9 +47,7 @@ def getData():
 				t.append(float(v))
 			data.append(t)
 	num_tuples = len(data)
-	print num_features, num_tuples
-
-
+		
 def initFeatures():
 	for i in range(0, num_features):
 		temp = feature()
@@ -63,49 +55,9 @@ def initFeatures():
 		temp.pheromone = cc
 		features.append(temp)
 
+def initAnt(ants, real_ants):
 
-def calculate_Di(a, f):
-
-	x = sys.float_info.max
-	global num_features
-	global gamma
-	global beta
-
-	for i in a.ant_f:
-		term1 = (mi_ff[f][f] - mi_ff[f][i])/mi_ff[f][f]
-		x = min(x, term1)
-
-	term2 = beta/len(a.ant_f)
-	sum = 0.0
-	for i in a.ant_f:
-		sum = sum + math.pow(cmi_ffc[f][i]/(mi_fc[f] + mi_fc[i]), gamma)
-	
-	term2 = term2*sum
-	return term1*term2
-
-def local_importance(a, f):
-
-	Di = calculate_Di(a, f)
-	Li = mi_fc[f]*(2/(1+math.exp(-1*alpha*Di)) - 1)
-	return Li
-
-
-def calculate_denominator(a):
-
-	den = 0.0
-	for ff in range(0, len(features)):
-		if ff not in a.ant_f:
-			den = den + features[ff].pheromone*local_importance(a, ff)
-	
-	return den
-
-
-def calculate_usm(a, f, den):
-
-	usm = features[f].pheromone*local_importance(a, f)/den
-	return usm
-
-def initAnt(temp_ants):
+	global p
 
 	a = ant()
 	temp_selected_features = list(selected_features)
@@ -116,29 +68,19 @@ def initAnt(temp_ants):
 		a.ant_f.append(temp_selected_features[r])
 		temp_selected_features.remove(temp_selected_features[r])
 
-		
-	for i in range(0, p):
-		
-		den = calculate_denominator(a)
-		max_usm = sys.float_info.min
-		max_usm_feature_number = -1
-		for f in range(0, len(features)):
-			
-			if f not in a.ant_f:
-				usmmmm = calculate_usm(a, f, den)
-				if max_usm < usmmmm:
-					max_usm = usmmmm
-					max_usm_feature_number = f
-		a.ant_f.append(max_usm_feature_number)
 
-	temp_ants.append(a)
+	#Apply USM and other measures here for the next p num_features
+	for i in range(0, p):
+
+		 
+
+	ants.append(a)
 
 def classifyAnts(ants):
 
 	clf = LinearDiscriminantAnalysis()
-	global best_ant
-	global best_predicted
-	global best_ground_truth
+
+
 	# Training
 	for a in ants:
 
@@ -179,19 +121,16 @@ def classifyAnts(ants):
 
 		predict = clf.predict(X_np)
 		a.mse = mean_squared_error(Y_np, predict)
-		a.ant_accuracy = accuracy_score(Y_np, predict, normalize=False)*100.0/len(Y_np)
+		print a.mse
 
-		if a.mse < best_ant.mse:
-			best_ant.mse = a.mse
-			best_ant.ant_f = list(a.ant_f)
-			best_ant.ant_accuracy = a.ant_accuracy
-			best_predicted = list(predict)
-			best_ground_truth = list(Y)
-		
 def updatePheromoneTrail(ants):
 
 	max_mse = ants[k-1].mse
 	common_denominator = max_mse - ants[0].mse
+
+	# Delete the previous list of attributes from which m-p features are chosen
+	# and fill it with the union of k best ants feature subset
+	del selected_features[:]
 
 	# Calculate
 	for i in range(0, k):
@@ -199,51 +138,44 @@ def updatePheromoneTrail(ants):
 			if j in ants[i].ant_f:
 				features[j].delta = features[j].delta + (max_mse - ants[i].mse)/common_denominator
 
+				#Union of best k ants feature subset
+				if j not in selected_features:
+					selected_features.append(j)
+
 	# Update
 	for f in features:
 		f.pheromone = rho*f.pheromone + f.delta
 		f.delta = 0
-	
-	
-	# Remove extra features
-	unique_k_set = Set([])
-	for i in range(0, k):
-		for f in ants[i].ant_f:
-			unique_k_set.add(f)
-	
-	del selected_features[:]
-	for f in unique_k_set:
-		selected_features.append(f)
-	#print "size of selected features is ", len(selected_features)
+
+
 
 def getKey(a):
 	return a.mse
-def getAccuracyKey(a):
-	return a.ant_accuracy
 
 def perform_iteration():
-	
+
 	temp_ants = []
+
 	for i in range(0, num_ants):
-		initAnt(temp_ants)
-	
-	print "initialized ants"
+		initAnt(temp_ants, ants)
+
+	del ants[:]
 	ants = list(temp_ants)
+	
 	classifyAnts(ants)
-	acc_ant = sorted(ants, key = getAccuracyKey, reverse = True)
-	print acc_ant[0].ant_accuracy
 	ants = sorted(ants,key=getKey)
 	updatePheromoneTrail(ants)
 	return ants[0]
 
+
 ##### DECLARATIONS #####
 
 cc = 1
-max_iter = 15
-k = 10
-pp = 3
+max_iter = 1
+k = 4
+pp = 8
 p = 0
-num_ants = 10
+num_ants = 30
 num_features = 0
 features = []
 selected_features = []
@@ -254,64 +186,40 @@ result_data = []
 result_data_train = []
 result_data_test = []
 ants = []
-best_predicted = []
-best_ground_truth = []
 f_ans = 'true'
 num_tuples = 0
-m = 16
+m = 5
 split_ratio = 0.8
 rho = 0.75
-filename = 'Datasets/kc1.csv'
-mu = 1
-kappa = 1
-alpha = 0.3
-gamma = 3
-beta = 1.65
-best_ant = ant()
+filename = 'CSV_Version.csv'
 ######////////////######
 
 getData()
 
 #### SPLIT TRAIN AND TEST DATA ##############
+num_train = int(num_tuples*split_ratio)
+num_test = num_tuples - num_train
+train_data = data[:num_train]
+test_data = data[num_train:]
+result_data_train = result_data[:num_train]
+result_data_test = result_data[num_train:]
 
-train_data, test_data, result_data_train, result_data_test = train_test_split(data, result_data, test_size = 0.2, random_state = 42)
-num_train = len(train_data)
-num_test = len(test_data)
-print "number train and test", num_train, num_test 
 ######/////////////////////////###########
 
 initFeatures()
-print "initialized features"
-#mi_fc, mi_ff, cmi_ffc = get_mutual_information('jm1_final.csv')
-with open('Datasets/mi_fc_kc1.pkl', 'rb') as pick:
-	mi_fc = pickle.load(pick)
-pick.close()
-with open('Datasets/mi_ff_kc1.pkl', 'rb') as pick:
-	mi_ff = pickle.load(pick)
-pick.close()
-# with open('cmi_ffc.pkl', 'rb') as pick:
-# 	cmi_ffc = pickle.load(pick)
-# pick.close()
-cmi_ffc = get_mutual_information('Datasets/kc1_normalized_randomized.csv')
-# print "fetched mutual info"
-# print type(mi_fc),type(mi_ff) ,type(cmi_ffc) 
-# print mi_fc[4]
-# print mi_ff[4][5] 
-# print cmi_ffc[2][3]
+mi_fc, mi_ff, cmi_ffc = getMutualInfo(filename)
+
 if num_features <= m:
-	print "Number of features less than m"
+	print "Number of features less than m...exiting"
 	exit()
 
 for i in range(0, num_features):
 	selected_features.append(i)
 
 for i in range(0, max_iter):
-	perform_iteration()
+	selected_ant = perform_iteration()
+	print sorted(selected_features)
+	# To allow only m-p features, update value of
+	# p from 0 to whatever
 	if i == 0:
 		p = pp
-
-print num_features
-print num_tuples
-print "accuracy, ", best_ant.ant_accuracy, "mse ", best_ant.mse, "feature set ", best_ant.ant_f
-confusion = confusion_matrix(best_ground_truth, best_predicted)
-print confusion

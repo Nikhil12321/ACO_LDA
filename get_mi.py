@@ -11,18 +11,18 @@ def get_mutual_information(filename):
     headers_list = data.columns.get_values().tolist()
     X = data[headers_list[:-1]]
     y = data[headers_list[-1]]
-    # #Mutual information between each feature and class. Use mi_fc[i].
-    # mi_fc = mic(X, y, discrete_features = False)
-    # print "done mi fc"
-    # #Mutual information between each feature pair
-    # #To get entropy of a feature, use mi_ff[i][i]
-    # mi_ff = []
-    # for i in headers_list[:-1]:
-    #     feature = data[i]
-    #     mi_result_feature = mir(X, feature, discrete_features = False)
-    #     mi_ff.append(mi_result_feature)
-    #     print "done with ", i
-    # cmi_ffc contains Conditional Mutual Information of fi,fs:C. Use cmi_ffc[feature_i][feature_s]
+    #Mutual information between each feature and class. Use mi_fc[i].
+    mi_fc = mic(X, y, discrete_features = False)
+    print "done mi fc"
+    #Mutual information between each feature pair
+    #To get entropy of a feature, use mi_ff[i][i]
+    mi_ff = []
+    for i in headers_list[:-1]:
+        feature = data[i]
+        mi_result_feature = mir(X, feature, discrete_features = False)
+        mi_ff.append(mi_result_feature)
+        print "done with ", i
+    cmi_ffc contains Conditional Mutual Information of fi,fs:C. Use cmi_ffc[feature_i][feature_s]
     cmi_ffc = []
     for i in xrange(0, len(headers_list)-1):
         cmi = []
