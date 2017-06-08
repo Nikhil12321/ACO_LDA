@@ -1,6 +1,6 @@
 # major2
 
-This repo is used to perform Ant Colony optimization for feature reduction in a dataset.
+This repo is used to perform Ant Colony optimization for feature reduction in a dataset. Uses Linear Discriminant Analysis as the fitness function.
 The research paper referred and the implemented algorithm can be found here:
 [link](https://github.com/Nikhil12321/major2/blob/master/Docs/Untitled.pdf)
 
@@ -8,6 +8,7 @@ The research paper referred and the implemented algorithm can be found here:
 1. The file you would want to run is p1.py which contains the entire algorithm.
 2. Near the end of the file under declarations, you will see a variable 'filename' which contains the name of the .csv file you want to use as your data.
 3. All other declarations are various variables such as number of ants, number of iterations, and others which you can tweak to your interest.
+4. You can also change the fitness change to suit your interest. We have used LDA, a statistical classifier.
 
 ## Anything else that is needed?
 YES!!
