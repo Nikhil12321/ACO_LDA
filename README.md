@@ -1,4 +1,4 @@
-# major2
+# Ant Colony Optimization with Linear Discriminant Analysis
 
 This repo is used to perform Ant Colony optimization for feature reduction in a dataset. Uses Linear Discriminant Analysis as the fitness function.
 The research paper referred and the implemented algorithm can be found here:
